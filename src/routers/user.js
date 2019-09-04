@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../models/user');
+const auth = require('../middleware/auth');
 const router = new express.Router();
 
 
@@ -25,28 +26,46 @@ router.post('/users/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(email, password);
         const token = await user.generateAuthToken();
+        // res.send({user: user.getPublicProfile(), token: token});
         res.send({user: user, token: token});
     } catch (e) {
         res.status(400).send(e);
     }
 });
 
-// route login sẽ generate token và lưu vào mỗi lần login
+// Two Option to hide private data:
+// use your own method created in model
+// use toJSON function to auto hide
 
-router.get('/users', async (req, res) => {
-
+router.post('/users/logout', auth, async (req, res) => {
     try {
-        const users = await User.find({});
-        res.send(users);
+        req.user.tokens = req.user.tokens.filter((token) => {
+            return token.token !== req.token;
+        });
+        await req.user.save();
+        res.send(req.user);
+    } catch (e) {
+        res.status(500).send(e);
+        console.log(e);
+    }
+});
+
+router.post('/users/logoutAll', auth, async (req, res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send(req.user);
     } catch (e) {
         res.status(500).send(e);
     }
-    // User.find({}).then((users) => {
-    //     res.send(users);
-    // }).catch((error) => {
-    //     res.status(500).send(error);
-    // });
 });
+
+// route login sẽ generate token và lưu vào mỗi lần login
+
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user);
+});
+// middle được truyền vào như là second argument trong các rest api function
 
 router.get('/users/:id', async (req, res) => {
     const _id = req.params.id;
