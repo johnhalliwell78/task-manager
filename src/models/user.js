@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const Task = require('../models/task');
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -40,8 +42,21 @@ const userSchema = new mongoose.Schema({
             type: String,
             required: true
         }
-    }]
+    }], avatar: {
+        type: Buffer
+    }
+}, {
+    timestamps: true
 });
+
+//virtual property is not existed in database, it's  a relationship between two entities
+
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    localField: '_id',
+    foreignField: 'owner'
+});
+
 userSchema.methods.getPublicProfile = function () {
     const user = this;
     const userObject = user.toObject();
@@ -57,6 +72,7 @@ userSchema.methods.toJSON = function () {
 
     delete userObject.password;
     delete userObject.tokens;
+    delete userObject.avatar;
 
     return userObject;
 };
@@ -87,6 +103,12 @@ userSchema.pre('save', async function (next) {
     if (user.isModified('password')) {
         user.password = await bcrypt.hashSync(user.password, bcrypt.genSaltSync(8), null);
     }
+    next();
+});
+
+userSchema.pre('remove', async function (next) {
+    const user = this;
+    await Task.deleteMany({owner: user._id});
     next();
 });
 
