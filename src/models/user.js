@@ -79,7 +79,7 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = async function () {
     const user = this;
-    const token = jwt.sign({_id: user._id.toString()}, 'mynodejsproject');
+    const token = jwt.sign({_id: user._id.toString()}, process.env.JWT_SECRET);
     user.tokens = user.tokens.concat({token: token});
     await user.save();
     // mỗi lần tạo ra một token thì phải lưu vào user , hàm concat để nối các mảng lại với nhau

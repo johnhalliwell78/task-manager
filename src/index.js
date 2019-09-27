@@ -7,7 +7,7 @@ const taskRouter = require('./routers/task');
 const multer = require('multer');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 //
 // app.use((req, res, next) => {
 //     if (req.method === 'GET') {
